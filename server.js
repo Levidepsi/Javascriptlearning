@@ -1,6 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv');
-
+const errorHandler = require('./middleware/error')
 
 // const morgan = require('morgan')
 const logger = require('./middleware/logger')
@@ -19,6 +19,9 @@ connectDB()
 
 const app = express();
 
+// Body Parser
+app.use(express.json())
+
 // Dev Logging Middleware
 // if (process.env.NODE_ENV === 'development') {
 //         app.use(morgan('dev'))
@@ -30,6 +33,8 @@ app.use(logger);
 // mount routers
 app.use('/api/v1/bootcamps', bootcamps);
 
+
+app.use(errorHandler)
 
 
 // Connect to Data Base
