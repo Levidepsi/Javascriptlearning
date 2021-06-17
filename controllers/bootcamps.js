@@ -1,9 +1,31 @@
 const Bootcamp = require('../models/Bootcamp')
 const ErrorResponse = require('../utils/errorResponse')
 const asyncHandler = require('../middleware/async')
-
+const geocoder = require('../utils/geocoder')
+const { Query } = require('mongoose')
 exports.getBootcamps = asyncHandler ( async (req, res, next) => {
-       const bootcamps = await Bootcamp.find()
+    let query;
+
+    const  reqQuery = {...req.query};
+
+    let queryStr = JSON.stringify(req.query);
+
+    const removeFields = ['select'];
+
+    removeFields.forEach(param => delete reqQuery[param])
+
+    Query = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`)
+
+     
+
+    query = Bootcamp.find(JSON.parse(queryStr))
+
+    if (req.query.select) {
+      
+    }
+       const bootcamps = await query;
+
+
        res.status(200).json({ success: true, data: bootcamps})
 
 
@@ -69,4 +91,29 @@ exports.deleteBootcamp = asyncHandler (async (req, res, next) => {
            }
            res.status(200).json({ success: true, data: {} });
    
+})
+
+exports.getBootcampsInRadius = asyncHandler (async (req, res, next) => {
+  const { zipcode, distance } = req.params;
+
+// Get lat/long from geocoder
+const loc = await geocoder.geocode(zipcode);
+const lat = loc[0].latitude;
+const lng = loc[0].longitude;
+
+// cal radius using radinas
+// Divide dist by radius of Earth
+//  Earth radius  = 3,963 mi / 6,378 km
+const radius = distance / 3963
+
+const boocamps = await Bootcamp.find ({
+  location: { $geoWithin: {$ceterSphere: [[lng, lat],  radius]}}
+})
+
+res.status(200).json({
+  success: true,
+  count: bootcamps.length,
+  data: bootcamps
+})
+
 })
